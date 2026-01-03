@@ -151,8 +151,9 @@ async def auto_cmd(update: Update, ctx):
         await update.message.reply_text("⛔ AUTO OFF")
 
 # ================= RUN =================
-async def main():
+def main():
     print("🤖 BOT STARTED – POLLING")
+
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -162,10 +163,13 @@ async def main():
     app.add_handler(CommandHandler("tim", tim))
     app.add_handler(CommandHandler("auto", auto_cmd))
 
-    asyncio.create_task(auto_runner(app))
-    await app.run_polling()
+    # chạy auto loop SAU khi app start
+    async def post_init(application):
+        application.create_task(auto_runner(application))
+
+    app.post_init = post_init
+
+    app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
-
+    main()
