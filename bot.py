@@ -2,8 +2,9 @@ import os, json, time, asyncio, requests
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
- # ================= CONFIG =================
-TOKEN = "7541286377:AAFtaPaKSgLisqWJWZVJMmBbNNBlAJfdX0s"
+
+# ================= CONFIG =================
+TOKEN = os.getenv("7541286377:AAE2KQtgc32_whmp098f587_lPpAGBBg9vM")
 ADMINS = [7903272808]
 
 GETKEY_API   = "http://duan.smmanhcode.click/getkey.php?username={}"
@@ -17,14 +18,14 @@ API_TIMEOUT = 60
 DATA = "data"
 AUTO_FILE = f"{DATA}/auto.json"
 AUTO_STATUS = f"{DATA}/auto_status.txt"
-
 os.makedirs(DATA, exist_ok=True)
 
 # ================= UTIL =================
 def call_api(url):
     try:
         return requests.get(url, timeout=API_TIMEOUT).json()
-    except:
+    except Exception as e:
+        print("API ERROR:", e)
         return None
 
 def is_verified(uid):
@@ -80,19 +81,12 @@ async def auto_runner(app):
 # ================= COMMAND =================
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        """🤖 BOT BUFF TIKTOK – VIP PRO
-━━━━━━━━━━━━━━
-⚡ Buff nhanh • Auto 15 phút
-
-📌 HƯỚNG DẪN
-🔑 /getkey – Lấy key
-✅ /key KEY – Xác thực
-
-👥 /fl username – Buff follow
-❤️ /tim link – Buff tim
-
-🤖 /auto on|off – Chỉ Admin
-━━━━━━━━━━━━━━"""
+        "🤖 BOT BUFF TIKTOK – VIP PRO\n\n"
+        "🔑 /getkey – Lấy key\n"
+        "✅ /key KEY – Xác thực\n"
+        "👥 /fl username – Buff follow\n"
+        "❤️ /tim link – Buff tim\n"
+        "🤖 /auto on|off – Admin"
     )
 
 async def getkey(update: Update, ctx):
@@ -100,99 +94,65 @@ async def getkey(update: Update, ctx):
     r = call_api(GETKEY_API.format(uid))
     if r and r.get("status") == "success":
         kb = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("✅ Lấy key", url=r["short_url"]),
-                InlineKeyboardButton("❌ Hủy", callback_data="cancel")
-            ]
+            [InlineKeyboardButton("✅ Lấy key", url=r["short_url"])]
         ])
-        await update.message.reply_text(
-            "🔑 LẤY KEY HÔM NAY\n━━━━━━━━━━━━━━\n⚠ Mỗi key chỉ dùng trong ngày",
-            reply_markup=kb
-        )
+        await update.message.reply_text("🔑 LẤY KEY HÔM NAY", reply_markup=kb)
     else:
         await update.message.reply_text("❌ Không lấy được key")
 
 async def key(update: Update, ctx):
     uid = update.effective_user.id
     if not ctx.args:
-        await update.message.reply_text("❌ Dùng: /key ABC123")
-        return
-    k = ctx.args[0]
-    r = call_api(CHECKKEY_API.format(k, uid))
+        return await update.message.reply_text("❌ /key ABC123")
+    r = call_api(CHECKKEY_API.format(ctx.args[0], uid))
     if r and r.get("status") == "success":
         save_verify(uid)
         await update.message.reply_text("✅ XÁC THỰC THÀNH CÔNG")
     else:
-        await update.message.reply_text("❌ Key sai hoặc chưa vượt link")
+        await update.message.reply_text("❌ Key sai")
 
 async def fl(update: Update, ctx):
-    uid = update.effective_user.id
-    if not is_verified(uid):
-        await update.message.reply_text("🔒 CHƯA XÁC THỰC\n/getkey")
-        return
+    if not is_verified(update.effective_user.id):
+        return await update.message.reply_text("🔒 /getkey để xác thực")
     if not ctx.args:
-        await update.message.reply_text("❌ Ví dụ: /fl anhhcode")
-        return
+        return await update.message.reply_text("❌ /fl username")
 
     user = ctx.args[0]
-    await update.message.reply_text(f"⏳ ĐANG BUFF FOLLOW: {user}")
     r = call_api(FOLLOW_API.format(user))
     if r and r.get("success"):
-        await update.message.reply_text(
-            f"""✅ BUFF FOLLOW THÀNH CÔNG
-━━━━━━━━━━━━━━
-👤 {r['username']}
-🏷 {r['nickname']}
-📊 Trước: {r['before']}
-📈 Sau: {r['after']}
-🚀 +{r['increase']}
-━━━━━━━━━━━━━━"""
-        )
-
+        await update.message.reply_text(f"✅ FOLLOW +{r['increase']}")
     a = load_auto()
     a.append({"chat_id": update.effective_chat.id, "type": "fl", "value": user, "last": time.time()})
     save_auto(a)
 
 async def tim(update: Update, ctx):
-    uid = update.effective_user.id
-    if not is_verified(uid):
-        await update.message.reply_text("🔒 CHƯA XÁC THỰC\n/getkey")
-        return
+    if not is_verified(update.effective_user.id):
+        return await update.message.reply_text("🔒 /getkey để xác thực")
     if not ctx.args:
-        await update.message.reply_text("❌ Ví dụ: /tim https://tiktok.com/...")
-        return
+        return await update.message.reply_text("❌ /tim link")
 
     link = ctx.args[0]
-    await update.message.reply_text("⏳ ĐANG BUFF TIM")
     r = call_api(LIKE_API.format(link))
     if r and r.get("success"):
-        await update.message.reply_text(
-            f"""✅ BUFF TIM THÀNH CÔNG
-━━━━━━━━━━━━━━
-👤 {r['nickname']}
-📊 Trước: {r['before']}
-📈 Sau: {r['after']}
-🚀 +{r['increase']}
-━━━━━━━━━━━━━━"""
-        )
-
+        await update.message.reply_text(f"✅ TIM +{r['increase']}")
     a = load_auto()
     a.append({"chat_id": update.effective_chat.id, "type": "tim", "value": link, "last": time.time()})
     save_auto(a)
 
 async def auto_cmd(update: Update, ctx):
     if update.effective_user.id not in ADMINS:
-        await update.message.reply_text("❌ Bạn không phải admin")
-        return
+        return await update.message.reply_text("❌ Không phải admin")
     if ctx.args and ctx.args[0] == "on":
         open(AUTO_STATUS, "w").write("on")
-        await update.message.reply_text("✅ AUTO BUFF: BẬT")
+        await update.message.reply_text("✅ AUTO ON")
     else:
         if os.path.exists(AUTO_STATUS):
             os.remove(AUTO_STATUS)
-        await update.message.reply_text("⛔ AUTO BUFF: TẮT")
+        await update.message.reply_text("⛔ AUTO OFF")
+
+# ================= RUN =================
 async def main():
-    print("🤖 BOT STARTED – POLLING...")
+    print("🤖 BOT STARTED – POLLING")
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -206,6 +166,6 @@ async def main():
     await app.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
+
 
