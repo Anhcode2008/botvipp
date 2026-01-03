@@ -2,8 +2,7 @@ import os, json, time, asyncio, requests
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-
-# ================= CONFIG =================
+ # ================= CONFIG =================
 TOKEN = "7541286377:AAFtaPaKSgLisqWJWZVJMmBbNNBlAJfdX0s"
 ADMINS = [7903272808]
 
@@ -192,9 +191,8 @@ async def auto_cmd(update: Update, ctx):
         if os.path.exists(AUTO_STATUS):
             os.remove(AUTO_STATUS)
         await update.message.reply_text("⛔ AUTO BUFF: TẮT")
-
-# ================= RUN =================
 async def main():
+    print("🤖 BOT STARTED – POLLING...")
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
