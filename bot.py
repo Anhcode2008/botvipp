@@ -4,7 +4,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ================= CONFIG =================
-TOKEN = os.getenv("7541286377:AAEhLLd3oN2p0GB0rOLKNU_K95DV4gTUzlI")
+TOKEN = "7541286377:AAEhLLd3oN2p0GB0rOLKNU_K95DV4gTUzlI"
 ADMINS = [7903272808]
 
 GETKEY_API   = "http://duan.smmanhcode.click/getkey.php?username={}"
